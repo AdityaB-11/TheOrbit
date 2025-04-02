@@ -1,0 +1,139 @@
+:root {
+  --primary-color: #6366f1;
+  --secondary-color: #4f46e5;
+  --background-color: #1a1a1a;
+  --surface-color: #2a2a2a;
+  --text-primary: #ffffff;
+  --text-secondary: #a3a3a3;
+  
+  /* Priority Colors */
+  --priority-low: #86efac;
+  --priority-medium: #fde047;
+  --priority-high: #ef4444;
+  --priority-completed: #4b5563;
+  --priority-urgent: #fb923c;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--background-color);
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+/* Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--surface-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 4px;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Task Priority Colors */
+.task-low {
+  background-color: var(--priority-low);
+  color: #064e3b;
+}
+
+.task-medium {
+  background-color: var(--priority-medium);
+  color: #713f12;
+}
+
+.task-high {
+  background-color: var(--priority-high);
+  color: #ffffff;
+}
+
+.task-completed {
+  background-color: var(--priority-completed);
+  color: #ffffff;
+}
+
+.task-urgent {
+  background-color: var(--priority-urgent);
+  color: #7c2d12;
+}
+
+/* Card Styles */
+.card {
+  background-color: var(--surface-color);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+}
+
+/* Button Styles */
+.btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--secondary-color);
+}
+
+/* Grid Layout */
+.grid {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+}
+
+/* Notification Styles */
+.notification {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 16px;
+  border-radius: 8px;
+  background-color: var(--surface-color);
+  color: var(--text-primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-out;
+} 

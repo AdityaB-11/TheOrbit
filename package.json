@@ -1,0 +1,70 @@
+{
+  "name": "theorbit",
+  "productName": "TheOrbit",
+  "version": "1.0.0",
+  "description": "A modern project management desktop application for managing multiple types of projects",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "npm run build-renderer && electron .",
+    "dev": "concurrently \"npm run watch-renderer\" \"electron . --debug\"",
+    "build": "npm run build-renderer && electron-builder",
+    "build-renderer": "webpack --config webpack.config.js",
+    "watch-renderer": "webpack --config webpack.config.js --watch",
+    "package": "npm run build-renderer && electron-builder --dir",
+    "make": "npm run build-renderer && electron-builder --mac --win --linux",
+    "lint": "eslint ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AdityaB-11/TheOrbit.git"
+  },
+  "keywords": [
+    "electron",
+    "project-management",
+    "task-management",
+    "github-integration"
+  ],
+  "author": "AdityaB-11",
+  "license": "MIT",
+  "dependencies": {
+    "@emotion/react": "^11.11.0",
+    "@emotion/styled": "^11.11.0",
+    "@mui/icons-material": "^5.11.16",
+    "@mui/material": "^5.13.0",
+    "@octokit/rest": "^19.0.7",
+    "electron-store": "^8.1.0",
+    "react": "^18.2.0",
+    "react-beautiful-dnd": "^13.1.1",
+    "react-dom": "^18.2.0",
+    "react-notifications-component": "^4.0.1",
+    "react-router-dom": "^6.11.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.21.8",
+    "@babel/preset-react": "^7.18.6",
+    "babel-loader": "^9.1.2",
+    "concurrently": "^8.0.1",
+    "css-loader": "^6.7.3",
+    "electron": "^24.3.0",
+    "electron-builder": "^23.6.0",
+    "eslint": "^8.40.0",
+    "eslint-plugin-react": "^7.32.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "style-loader": "^3.3.2",
+    "webpack": "^5.82.1",
+    "webpack-cli": "^5.1.1"
+  },
+  "build": {
+    "appId": "com.theorbit.app",
+    "mac": {
+      "category": "public.app-category.productivity"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage",
+      "category": "Development"
+    }
+  }
+}
