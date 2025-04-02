@@ -8,12 +8,17 @@ import {
   Chip,
   Grid,
   Button,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
   Edit as EditIcon,
+  MoreVert as MoreVertIcon,
 } from '@mui/icons-material';
+import { store } from '../store';
+import TaskDialog from './TaskDialog';
 
 const priorityColors = {
   low: '#86efac',
@@ -23,39 +28,28 @@ const priorityColors = {
   urgent: '#fb923c',
 };
 
-const columns = {
-  todo: {
-    id: 'todo',
-    title: 'To Do',
-  },
-  inProgress: {
-    id: 'inProgress',
-    title: 'In Progress',
-  },
-  completed: {
-    id: 'completed',
-    title: 'Completed',
-  },
-};
-
 function TaskManager() {
   const [tasks, setTasks] = useState({
     todo: [],
     inProgress: [],
     completed: [],
   });
+  const [projects, setProjects] = useState([]);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [menuTask, setMenuTask] = useState(null);
 
   useEffect(() => {
-    // Load tasks from electron-store
-    window.electron.invoke('store-get', 'tasks')
-      .then((savedTasks) => {
-        if (savedTasks) {
-          setTasks(savedTasks);
-        }
-      });
+    const unsubscribe = store.subscribe((state) => {
+      setTasks(state.tasks);
+      setProjects(state.projects);
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const onDragEnd = (result) => {
+  const handleDragEnd = async (result) => {
     const { source, destination } = result;
 
     if (!destination) return;
@@ -67,24 +61,51 @@ function TaskManager() {
       return;
     }
 
-    const sourceColumn = tasks[source.droppableId];
-    const destColumn = tasks[destination.droppableId];
-    const sourceTasks = Array.from(sourceColumn);
-    const destTasks = source.droppableId === destination.droppableId
-      ? sourceTasks
-      : Array.from(destColumn);
+    const taskId = result.draggableId;
+    await store.moveTask(taskId, source.droppableId, destination.droppableId);
+  };
 
-    const [removed] = sourceTasks.splice(source.index, 1);
-    destTasks.splice(destination.index, 0, removed);
+  const handleAddTask = async (taskData) => {
+    await store.addTask(taskData);
+    window.electron.send('show-notification', {
+      title: 'Task Created',
+      body: `Task "${taskData.title}" has been created`,
+    });
+  };
 
-    const newTasks = {
-      ...tasks,
-      [source.droppableId]: sourceTasks,
-      [destination.droppableId]: destTasks,
-    };
+  const handleEditTask = async (taskData) => {
+    await store.updateTask(selectedTask.id, taskData);
+    setSelectedTask(null);
+    window.electron.send('show-notification', {
+      title: 'Task Updated',
+      body: `Task "${taskData.title}" has been updated`,
+    });
+  };
 
-    setTasks(newTasks);
-    window.electron.invoke('store-set', 'tasks', newTasks);
+  const handleDeleteTask = async (taskId) => {
+    await store.deleteTask(taskId);
+    setMenuTask(null);
+    setAnchorEl(null);
+    window.electron.send('show-notification', {
+      title: 'Task Deleted',
+      body: 'Task has been deleted',
+    });
+  };
+
+  const handleMenuOpen = (event, task) => {
+    setAnchorEl(event.currentTarget);
+    setMenuTask(task);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setMenuTask(null);
+  };
+
+  const handleEditClick = () => {
+    setSelectedTask(menuTask);
+    setDialogOpen(true);
+    handleMenuClose();
   };
 
   return (
@@ -96,16 +117,16 @@ function TaskManager() {
         <Button
           variant="contained"
           startIcon={<AddIcon />}
-          sx={{ borderRadius: 2 }}
+          onClick={() => setDialogOpen(true)}
         >
           Add Task
         </Button>
       </Box>
 
-      <DragDropContext onDragEnd={onDragEnd}>
+      <DragDropContext onDragEnd={handleDragEnd}>
         <Grid container spacing={3}>
-          {Object.values(columns).map((column) => (
-            <Grid item xs={12} md={4} key={column.id}>
+          {Object.entries(tasks).map(([status, statusTasks]) => (
+            <Grid item xs={12} md={4} key={status}>
               <Paper
                 sx={{
                   p: 2,
@@ -115,9 +136,10 @@ function TaskManager() {
                 }}
               >
                 <Typography variant="h6" sx={{ mb: 2 }}>
-                  {column.title}
+                  {status === 'todo' ? 'To Do' :
+                   status === 'inProgress' ? 'In Progress' : 'Completed'}
                 </Typography>
-                <Droppable droppableId={column.id}>
+                <Droppable droppableId={status}>
                   {(provided, snapshot) => (
                     <Box
                       ref={provided.innerRef}
@@ -131,7 +153,7 @@ function TaskManager() {
                         borderRadius: 1,
                       }}
                     >
-                      {tasks[column.id].map((task, index) => (
+                      {statusTasks.map((task, index) => (
                         <Draggable
                           key={task.id}
                           draggableId={task.id}
@@ -157,14 +179,12 @@ function TaskManager() {
                                 <Typography variant="subtitle1">
                                   {task.title}
                                 </Typography>
-                                <Box>
-                                  <IconButton size="small">
-                                    <EditIcon fontSize="small" />
-                                  </IconButton>
-                                  <IconButton size="small" color="error">
-                                    <DeleteIcon fontSize="small" />
-                                  </IconButton>
-                                </Box>
+                                <IconButton
+                                  size="small"
+                                  onClick={(e) => handleMenuOpen(e, task)}
+                                >
+                                  <MoreVertIcon fontSize="small" />
+                                </IconButton>
                               </Box>
                               <Typography
                                 variant="body2"
@@ -182,11 +202,23 @@ function TaskManager() {
                                     color: task.priority === 'high' ? 'white' : 'inherit',
                                   }}
                                 />
-                                {task.project && (
+                                {task.projectId && (
                                   <Chip
-                                    label={task.project}
+                                    label={projects.find(p => p.id === task.projectId)?.name}
                                     size="small"
                                     variant="outlined"
+                                  />
+                                )}
+                                {task.deadline && (
+                                  <Chip
+                                    label={new Date(task.deadline).toLocaleDateString()}
+                                    size="small"
+                                    variant="outlined"
+                                    color={
+                                      new Date(task.deadline) < new Date()
+                                        ? 'error'
+                                        : 'default'
+                                    }
                                   />
                                 )}
                               </Box>
@@ -203,6 +235,37 @@ function TaskManager() {
           ))}
         </Grid>
       </DragDropContext>
+
+      <TaskDialog
+        open={dialogOpen}
+        onClose={() => {
+          setDialogOpen(false);
+          setSelectedTask(null);
+        }}
+        task={selectedTask}
+        onSave={selectedTask ? handleEditTask : handleAddTask}
+        projects={projects}
+      />
+
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+      >
+        <MenuItem onClick={handleEditClick}>
+          <EditIcon fontSize="small" sx={{ mr: 1 }} />
+          Edit
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            handleDeleteTask(menuTask.id);
+          }}
+          sx={{ color: 'error.main' }}
+        >
+          <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
+          Delete
+        </MenuItem>
+      </Menu>
     </Box>
   );
 }
